@@ -41,14 +41,63 @@ def main():
     st.title("🤖 AI Chatbot")
     st.markdown("---")
     
-    # Status indicators
+    # Initialize model and temperature in session state if not exists
+    if "model" not in st.session_state:
+        st.session_state.model = "gpt-4o"
+    if "temperature" not in st.session_state:
+        st.session_state.temperature = 0.0
+    
+    # Sidebar with settings (process first to update session state)
+    with st.sidebar:
+        st.header("⚙️ Settings")
+        
+        # Model selection
+        models = ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo"]
+        selected_model = st.selectbox(
+            "Choose Model",
+            models,
+            index=models.index(st.session_state.model) if st.session_state.model in models else 0
+        )
+        # Update session state if changed
+        if selected_model != st.session_state.model:
+            st.session_state.model = selected_model
+        
+        # Temperature slider
+        selected_temp = st.slider(
+            "Creativity (Temperature)",
+            min_value=0.0,
+            max_value=2.0,
+            value=st.session_state.temperature,
+            step=0.1,
+            help="Higher values make responses more creative, lower values make them more focused"
+        )
+        # Update session state if changed
+        if selected_temp != st.session_state.temperature:
+            st.session_state.temperature = selected_temp
+        
+        # Clear chat button
+        if st.button("🗑️ Clear Chat"):
+            st.session_state.messages = [
+                {"role": "system", "content": "You are a helpful and friendly AI assistant."}
+            ]
+            st.rerun()
+        
+        # Display chat info
+        st.markdown("---")
+        st.markdown(f"**Messages in conversation:** {len(st.session_state.get('messages', [])) - 1}")
+        
+        # API key status
+        st.markdown("---")
+        st.markdown("**API Key Status:** ✅ Connected")
+    
+    # Status indicators (after sidebar updates session state)
     col1, col2, col3 = st.columns(3)
     with col1:
         st.metric("Status", "🟢 Connected")
     with col2:
         st.metric("Messages", len(st.session_state.get("messages", [])) - 1)
     with col3:
-        st.metric("Model", "GPT-4o")
+        st.metric("Model", st.session_state.model)
     
     st.markdown("---")
     
@@ -68,12 +117,6 @@ def main():
             {"role": "system", "content": "You are a helpful and friendly AI assistant."}
         ]
     log_to_console(f"st.session_state: {st.session_state}")
-
-    # Initialize model and temperature in session state if not exists
-    if "model" not in st.session_state:
-        st.session_state.model = "gpt-4o"
-    if "temperature" not in st.session_state:
-        st.session_state.temperature = 0.0
     
     # Display chat history
     for message in st.session_state.messages:
@@ -91,6 +134,7 @@ def main():
         # Add user message
         st.session_state.messages.append({"role": "user", "content": prompt})
         log_to_console(f"st.session_state: {st.session_state}")
+        
 
         # Get AI response
         response = get_completion_from_messages(client, st.session_state.messages, model=st.session_state.model, temperature=st.session_state.temperature)
@@ -99,42 +143,6 @@ def main():
             st.session_state.messages.append({"role": "assistant", "content": response})
             log_to_console(f"st.session_state: {st.session_state}")
             st.rerun()  # Forces Streamlit to rerun the entire script, clearing the page and redisplaying everything with updated session state
-
-    # Sidebar with settings
-    with st.sidebar:
-        st.header("⚙️ Settings")
-        
-        # Model selection
-        st.session_state.model = st.selectbox(
-            "Choose Model",
-            ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo"],
-            index=["gpt-4o", "gpt-4o-mini", "gpt-4-turbo"].index(st.session_state.model)
-        )
-        
-        # Temperature slider
-        st.session_state.temperature = st.slider(
-            "Creativity (Temperature)",
-            min_value=0.0,
-            max_value=2.0,
-            value=st.session_state.temperature,
-            step=0.1,
-            help="Higher values make responses more creative, lower values make them more focused"
-        )
-        
-        # Clear chat button
-        if st.button("🗑️ Clear Chat"):
-            st.session_state.messages = [
-                {"role": "system", "content": "You are a helpful and friendly AI assistant."}
-            ]
-            st.rerun()
-        
-        # Display chat info
-        st.markdown("---")
-        st.markdown(f"**Messages in conversation:** {len(st.session_state.messages) - 1}")
-        
-        # API key status
-        st.markdown("---")
-        st.markdown("**API Key Status:** ✅ Connected")
 
 if __name__ == "__main__":
     main() 
