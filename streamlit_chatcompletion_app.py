@@ -53,7 +53,7 @@ def main():
     st.markdown("---")
     
     # Initialize OpenAI client
-    api_key = os.getenv("OPENAI_API_KEY")
+    api_key = os.getenv("OPENAI_API_KEY") or st.secrets.get("OPENAI_API_KEY")
     if not api_key:
         st.error("❌ OPENAI_API_KEY not found in environment variables!")
         st.stop()
